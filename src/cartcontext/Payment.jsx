@@ -5,8 +5,10 @@ import { useNavigate } from "react-router-dom";
 
 import { fetchUserProfile } from "../Api/userApi";
 import { fetchAddresses, addAddress, updateAddress, deleteAddress } from "../Api/addressApi";
-import { getUserCart } from "../Api/cartApi";
+import { getUserCart,removeCartItem } from "../Api/cartApi";
 import { createOrder } from "../Api/orderApi";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const RAZORPAY_KEY_ID = "rzp_test_R8s9mangMgbzCb";
 
@@ -114,35 +116,56 @@ const handleDeleteAddress = async (addrId) => {
 
   const getSubtotal = () => cart.reduce((t,i) => t + i.productPrice*i.productQuantity, 0);
   const getTotalPrice = () => paymentMethod==="Cash on Delivery"? getSubtotal()*1.05 : getSubtotal();
+const handlePlaceOrder = async (paymentStatus="Pending", paymentId=null, razorpaySignature=null) => {
+  if (!cart.length) return setError("Cart is empty");
+  if (!selectedAddress && !isAddressValid) return setError("Please provide a valid delivery address");
 
-  const handlePlaceOrder = async (paymentStatus="Pending", paymentId=null, razorpaySignature=null) => {
-    if (!cart.length) return setError("Cart is empty");
-    if (!selectedAddress && !isAddressValid) return setError("Please provide a valid delivery address");
+  // Use selectedAddress if it exists, otherwise newAddress
+  const orderAddress = selectedAddress ? selectedAddress : { ...newAddress };
 
-    const orderData = {
-      orderItems: cart.map(item => ({
-        productId: item.productId || item.id,
-        quantity: item.productQuantity > 0 ? item.productQuantity : 1
-      })),
-      paymentStatus,
-      paymentId,
-      razorpaySignature,
-      address: selectedAddress || { ...newAddress }
-    };
-
-    console.log("=== Order Payload ===");
-    console.log(JSON.stringify(orderData, null, 2));
-
-    try {
-      const res = await createOrder(orderData);
-      console.log("Order created successfully:", res.data);
-      navigate("/orders", { state: { orderId: res.data.orderId } });
-    } catch (err) {
-      console.error("Error placing order:", err.response?.data || err.message);
-      if(err.response?.data?.errors) console.error("Backend Validation Errors:", err.response.data.errors);
-      setError("Failed to place order: " + (err.response?.data?.message || "Check console for details."));
-    }
+  const orderData = {
+    orderItems: cart.map(item => ({
+      productId: item.productId || item.id,
+      quantity: item.productQuantity > 0 ? item.productQuantity : 1
+    })),
+      paymentMethod, 
+    paymentStatus,
+    paymentId,
+    razorpaySignature,
+    address: orderAddress
   };
+
+  try {
+    const res = await createOrder(orderData);
+    console.log("Order created successfully:", res.data);
+
+    // Remove items from cart
+    for (let item of cart) {
+      try {
+        await removeCartItem(item.id || item.productId);
+      } catch (err) {
+        console.error("Failed to remove cart item:", err);
+      }
+    }
+
+    setCart([]);
+    toast.success("🎉 Order placed successfully!", {
+      position: "top-center",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "colored",
+    });
+    navigate("/orders", { state: { orderId: res.data.orderId } });
+  } catch (err) {
+    console.error("Error placing order:", err.response?.data || err.message);
+    if(err.response?.data?.errors) console.error("Backend Validation Errors:", err.response.data.errors);
+    setError("Failed to place order: " + (err.response?.data?.message || "Check console for details."));
+  }
+};
+
 
   const initiateRazorpayPayment = async () => {
     setIsProcessingPayment(true);
@@ -152,7 +175,7 @@ const handleDeleteAddress = async (addrId) => {
         key: RAZORPAY_KEY_ID,
         amount,
         currency: "INR",
-        name: "Your Store Name",
+        name: "Shoe's Store",
         description: "Order Payment",
         handler: function(response){
           handlePlaceOrder("Paid", response.razorpay_payment_id, response.razorpay_signature)
