@@ -22,3 +22,6 @@ export const updateOrderStatus = async (orderId, status) => {
 export const cancelOrder = async (orderId) => {
   return await api.delete(`/orders/${orderId}`);
 };
+
+
+

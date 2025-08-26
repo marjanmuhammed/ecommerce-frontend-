@@ -19,6 +19,7 @@ import Wishlist from "./pages/Whishlist";
 import ProfilePage from "./Userprofile/ProfilePage";
 import { ToastContainer } from "react-toastify";
 import Payment from "../src/cartcontext/Payment";
+import TrackOrderNavbar from "./cartcontext/Trackordernavbar";
 
 
 
@@ -50,6 +51,7 @@ const App = () => {
           <Route path="/admin/users" element={<ManageUsers />} /> 
           <Route path="/wishlist" element={<Wishlist />} />
            <Route path="/profile" element={<ProfilePage />} />
+           <Route path="/trackordernavbar" element={<TrackOrderNavbar/>}/>
 
        
           

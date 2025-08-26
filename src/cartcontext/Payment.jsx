@@ -166,37 +166,54 @@ const handlePlaceOrder = async (paymentStatus="Pending", paymentId=null, razorpa
   }
 };
 
-
-  const initiateRazorpayPayment = async () => {
-    setIsProcessingPayment(true);
-    try {
-      const amount = Math.round(getTotalPrice()*100);
-      const options = {
-        key: RAZORPAY_KEY_ID,
-        amount,
-        currency: "INR",
-        name: "Shoe's Store",
-        description: "Order Payment",
-        handler: function(response){
-          handlePlaceOrder("Paid", response.razorpay_payment_id, response.razorpay_signature)
-            .then(()=>console.log("Order placed after payment"))
-            .catch(err=>console.error("Failed after payment:", err));
-        },
-        prefill: {
-          name: userProfile?.fullName || "",
-          email: userProfile?.email || "",
-          contact: selectedAddress?.phoneNumber || newAddress.phoneNumber || ""
-        },
-        theme: { color: "#3399cc" }
-      };
-      new window.Razorpay(options).open();
-    } catch(err){
-      console.error("Payment initiation error:", err);
-      setError("Failed to initiate payment. Please try again.");
-    } finally{
-      setIsProcessingPayment(false);
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) resolve(true);
+    else {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
     }
-  };
+  });
+};
+
+const initiateRazorpayPayment = async () => {
+  setIsProcessingPayment(true);
+  try {
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      setError("Failed to load Razorpay SDK.");
+      setIsProcessingPayment(false);
+      return;
+    }
+
+    const amount = Math.round(getTotalPrice() * 100);
+    const options = {
+      key: RAZORPAY_KEY_ID,
+      amount,
+      currency: "INR",
+      name: "Shoe's Store",
+      description: "Order Payment",
+      handler: function(response){
+        handlePlaceOrder("Paid", response.razorpay_payment_id, response.razorpay_signature);
+      },
+      prefill: {
+        name: userProfile?.fullName || "",
+        email: userProfile?.email || "",
+        contact: selectedAddress?.phoneNumber || newAddress.phoneNumber || ""
+      },
+      theme: { color: "#3399cc" }
+    };
+    new window.Razorpay(options).open();
+  } catch (err) {
+    setError("Payment initiation failed.");
+  } finally {
+    setIsProcessingPayment(false);
+  }
+};
+
 
   if(isLoading) return <div className="min-h-screen flex justify-center items-center">Loading...</div>;
 
@@ -270,13 +287,55 @@ const handlePlaceOrder = async (paymentStatus="Pending", paymentId=null, razorpa
               <button onClick={()=>setStep(1)} className="text-blue-500 text-sm mt-2">Change address</button>
             </div>
 
-            <div className="border rounded-lg p-4 shadow-md mb-4">
-              <h2 className="text-xl font-bold mb-3">Order Summary</h2>
-              {cart.map((item,index)=>(<div key={index} className="flex justify-between py-2 border-b"><span>{item.productName} x {item.productQuantity}</span><span>₹{item.productPrice*item.productQuantity}</span></div>))}
-              <div className="flex justify-between font-semibold mt-2"><span>Subtotal:</span><span>₹{getSubtotal()}</span></div>
-              {paymentMethod==="Cash on Delivery" && <div className="flex justify-between text-sm text-gray-600">COD Fee 5%: <span>₹{Math.round(getSubtotal()*0.05)}</span></div>}
-              <div className="flex justify-between font-bold mt-2">Grand Total:<span>₹{Math.round(getTotalPrice())}</span></div>
-            </div>
+         <div className="border rounded-lg p-4 shadow-md mb-4">
+  <h2 className="text-xl font-bold mb-3">Order Summary</h2>
+  {cart.map((item, index) => (
+    <div
+      key={index}
+      className="flex justify-between items-center py-2 border-b"
+    >
+      {/* Left section: Image + name/qty */}
+   <div className="flex items-center">
+  {/* Product Image */}
+  <img
+    src={item.productImageUrl || "https://via.placeholder.com/100"}
+    alt={item.productName}
+    className="w-24 h-24 object-contain rounded-lg mr-4"
+  />
+
+  {/* Product Details */}
+  <div className="flex flex-col">
+    <span className="font-semibold">
+      {item.productName} x {item.productQuantity}
+    </span>
+    <span className="text-sm text-gray-600">
+      {item.productDescription || "No description available"}
+    </span>
+  </div>
+</div>
+
+
+      {/* Right section: Price */}
+      <span>₹{item.productPrice * item.productQuantity}</span>
+    </div>
+  ))}
+
+  <div className="flex justify-between font-semibold mt-2">
+    <span>Subtotal:</span>
+    <span>₹{getSubtotal()}</span>
+  </div>
+
+  {paymentMethod === "Cash on Delivery" && (
+    <div className="flex justify-between text-sm text-gray-600">
+      COD Fee 5%: <span>₹{Math.round(getSubtotal() * 0.05)}</span>
+    </div>
+  )}
+
+  <div className="flex justify-between font-bold mt-2">
+    Grand Total:<span>₹{Math.round(getTotalPrice())}</span>
+  </div>
+</div>
+
 
             {paymentMethod==="Online Payment" ? (
               <button onClick={initiateRazorpayPayment} disabled={isProcessingPayment} className="bg-blue-600 text-white px-6 py-3 rounded w-full">{isProcessingPayment?"Processing...":"Pay Now"}</button>
