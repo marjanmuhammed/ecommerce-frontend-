@@ -4,6 +4,7 @@ import Navbar from "../Navbarcontext/Navbar";
 import { getUserOrders, cancelOrder } from "../Api/orderApi";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useOrderContext } from "../context/OrderContext"; 
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -11,6 +12,7 @@ const Orders = () => {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
   const navigate = useNavigate();
+  const { ordersUpdated, triggerOrdersUpdate } = useOrderContext(); // Get triggerOrdersUpdate
 
   const cancelOptions = [
     "Delivery time issue",
@@ -42,8 +44,8 @@ const Orders = () => {
     };
 
     fetchOrders();
-  }, [navigate]);
-
+  }, [navigate, ordersUpdated]); // Add ordersUpdated to dependency array
+  
   const calculateOrderTotal = (items) =>
     items.reduce((sum, item) => sum + item.totalPrice, 0);
 
@@ -65,9 +67,12 @@ const Orders = () => {
     }
     try {
       await cancelOrder(selectedOrderId, { reason: cancelReason });
+      // Update the local state to remove the cancelled order
       setOrders((prev) =>
         prev.filter((order) => order.id !== selectedOrderId)
       );
+      // Trigger a global orders update to refresh all components
+      triggerOrdersUpdate();
       toast.success("✅ Order cancelled successfully!");
       setShowCancelPopup(false);
       setSelectedOrderId(null);
@@ -88,7 +93,7 @@ const Orders = () => {
     navigate(`/track-order/${orderId}`);
   };
 
-  const stages = ["Confirmed", "Pending", "Shipped", "Arrived", "Out for Delivery"];
+const stages = ["Confirmed", "Processing", "Shipped", "Out for Delivery", "Delivered"];
 
   return (
     <div className="relative w-full min-h-screen bg-gray-50">
@@ -108,13 +113,24 @@ const Orders = () => {
               className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition duration-300"
             >
               {/* Order Header */}
-           <div className="flex justify-between items-center mb-2">
-  <h4 className="text-lg font-semibold text-gray-800">
-    Order ID: {order.id}
-  </h4>
-
-</div>
-
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-lg font-semibold text-gray-800">
+                  Order ID: {order.id}
+                </h4>
+                <span className={`px-3 py-1 text-xs rounded-full ${
+                  order.status === 'Completed' 
+                    ? 'bg-green-100 text-green-800' 
+                    : order.status === 'Processing' 
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : order.status === 'Pending'
+                    ? 'bg-blue-100 text-blue-800'
+                    : order.status === 'Cancelled'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {order.status}
+                </span>
+              </div>
 
               {/* Order Time */}
               <p className="text-gray-500 text-sm mb-2">
@@ -122,9 +138,11 @@ const Orders = () => {
               </p>
 
               {/* Expected Delivery */}
-              <p className="text-gray-500 text-sm mb-2">
-                🚚 Expected Delivery: {getDeliveryDate(order.orderDate)}
-              </p>
+              {order.status !== 'Cancelled' && (
+                <p className="text-gray-500 text-sm mb-2">
+                  🚚 Expected Delivery: {getDeliveryDate(order.orderDate)}
+                </p>
+              )}
 
               {/* Shipping Address */}
               <p className="text-gray-700 mb-2">
@@ -132,44 +150,51 @@ const Orders = () => {
                 {order.address.addressLine}, {order.address.pincode}
               </p>
 
-              {/* Order Status */}
-              <div className="mt-4">
-                <h4 className="text-lg font-semibold mb-2">Order Progress:</h4>
-                <div className="flex items-center justify-between">
-                  {stages.map((stage, idx) => {
-                    const stageIndex = stages.indexOf(order.status);
-                    return (
-                      <div key={idx} className="flex-1 text-center relative">
-                        <div
-                          className={`mx-auto w-6 h-6 rounded-full border-2 ${
-                            idx <= stageIndex
-                              ? "border-green-500 bg-green-500"
-                              : "border-gray-300 bg-white"
-                          }`}
-                        />
-                        {idx < stages.length - 1 && (
-                          <div
-                            className={`absolute top-3 left-1/2 w-full h-1 ${
-                              idx < stageIndex
-                                ? "bg-green-500"
-                                : "bg-gray-300"
-                            }`}
-                          ></div>
-                        )}
-                        <p
-                          className={`mt-2 text-xs ${
-                            idx <= stageIndex
-                              ? "text-green-600 font-semibold"
-                              : "text-gray-400"
-                          }`}
-                        >
-                          {stage}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+            {order.status !== 'Cancelled' && (
+  <div className="mt-4">
+    <h4 className="text-lg font-semibold mb-2">Order Progress:</h4>
+    <div className="flex items-center justify-between">
+      {stages.map((stage, idx) => {
+        // Determine current stage index
+        let stageIndex = stages.indexOf(order.status);
+        // If status is "Out for Delivery", map it to the correct index
+        if (order.status === "Out for Delivery") {
+          stageIndex = 3;
+        }
+        
+        return (
+          <div key={idx} className="flex-1 text-center relative">
+            <div
+              className={`mx-auto w-6 h-6 rounded-full border-2 ${
+                idx <= stageIndex
+                  ? "border-green-500 bg-green-500"
+                  : "border-gray-300 bg-white"
+              }`}
+            />
+            {idx < stages.length - 1 && (
+              <div
+                className={`absolute top-3 left-1/2 w-full h-1 ${
+                  idx < stageIndex
+                    ? "bg-green-500"
+                    : "bg-gray-300"
+                }`}
+              ></div>
+            )}
+            <p
+              className={`mt-2 text-xs ${
+                idx <= stageIndex
+                  ? "text-green-600 font-semibold"
+                  : "text-gray-400"
+              }`}
+            >
+              {stage}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
 
               {/* Items */}
               <div className="mt-4 border-t pt-4">

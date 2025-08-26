@@ -20,6 +20,7 @@ import ProfilePage from "./Userprofile/ProfilePage";
 import { ToastContainer } from "react-toastify";
 import Payment from "../src/cartcontext/Payment";
 import TrackOrderNavbar from "./cartcontext/Trackordernavbar";
+import { OrderProvider } from "./context/OrderContext";
 
 
 
@@ -27,6 +28,7 @@ import TrackOrderNavbar from "./cartcontext/Trackordernavbar";
 
 const App = () => {
   return (
+     <OrderProvider>
     <ProductProvider>
 
     <Router>
@@ -53,6 +55,7 @@ const App = () => {
            <Route path="/profile" element={<ProfilePage />} />
            <Route path="/trackordernavbar" element={<TrackOrderNavbar/>}/>
 
+
        
           
         </Routes>
@@ -72,6 +75,7 @@ const App = () => {
      
     </Router>
     </ProductProvider>
+    </OrderProvider>
   );
 };
 
