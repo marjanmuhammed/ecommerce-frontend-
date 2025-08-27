@@ -19,6 +19,7 @@ import axios from "axios";
 import { fetchUserProfile } from "../Api/userApi";
 import { getAllOrders, updateOrderStatus } from "../Api/adminOrderApi";
 import { useOrderContext } from "../context/OrderContext";
+import {getAllUsers} from "../Api/adminUserApi"
 import { toast } from "react-toastify";
 
 const BASE_URL = "https://localhost:7175/api";
@@ -33,7 +34,7 @@ const api = {
   fetchWomenProducts: () => axios.get(`${BASE_URL}/Products/category/Women`),
   fetchDealsProducts: () => axios.get(`${BASE_URL}/Products/category/Best Deals`),
   fetchHomeProducts: () => axios.get(`${BASE_URL}/Products/category/Home`),
-  fetchTotalUsers: () => axios.get(`${BASE_URL}/UserProfile/count`),
+ 
   fetchTotalRevenue: () => axios.get(`${BASE_URL}/orders/total-revenue`),
   fetchRecentOrders: () => axios.get(`${BASE_URL}/orders/recent`),
   fetchMonthlyRevenue: () => axios.get(`${BASE_URL}/orders/monthly-revenue`),
@@ -98,7 +99,7 @@ const AdminDashboard = () => {
         api.fetchWomenProducts(),
         api.fetchDealsProducts(),
         api.fetchHomeProducts(),
-        api.fetchTotalUsers(),
+        getAllUsers(),
         getAllOrders(),
         api.fetchTotalRevenue(),
         api.fetchRecentOrders(),
@@ -142,7 +143,13 @@ const AdminDashboard = () => {
       }
 
       // Process other data
-      const totalUsers = totalUsersRes.status === 'fulfilled' ? totalUsersRes.value.data : 0;
+ // Fetch all users
+// Fetch all users
+const usersData = totalUsersRes.status === 'fulfilled' ? totalUsersRes.value.data : [];
+const totalUsers = usersData.length;
+
+
+
       const apiTotalRevenue = totalRevenueRes.status === 'fulfilled' ? totalRevenueRes.value.data : 0;
       
       // Use calculated revenue if API returns 0 or invalid value
@@ -212,8 +219,9 @@ const AdminDashboard = () => {
         },
         users: {
           total: totalUsers,
-          newThisWeek: Math.floor(totalUsers * 0.1), // Placeholder calculation
-          active: Math.floor(totalUsers * 0.75), // Placeholder calculation
+         newThisWeek: Math.floor(totalUsers * 0.1), // Placeholder calculation
+active: Math.floor(totalUsers * 0.75), // Placeholder calculation
+
         },
         orders: {
           total: totalOrders,
@@ -621,20 +629,19 @@ const AdminDashboard = () => {
                             <td className="px-6 py-4 whitespace-nowrap">{formatCurrency(order.totalAmount)}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {editingStatus && editingStatus.orderId === order.id ? (
-                                <select
-                                  value={newStatus}
-                                  onChange={(e) => setNewStatus(e.target.value)}
-                                  className="bg-gray-700 text-white p-1 rounded"
-                                >
-                                  <option value="Pending">Confirmed</option>
-                                  <option value="Processing">Processing</option>
-                                  <option value="Shipped">Shipped</option>
-                                  <option value="Delivered">Out for Delivery
+                            <select
+  value={newStatus}
+  onChange={(e) => setNewStatus(e.target.value)}
+  className="bg-gray-700 text-white p-1 rounded"
+>
+  <option value="Pending">Pending</option>
+  <option value="Processing">Processing</option>
+  <option value="Shipped">Shipped</option>
+  <option value="Out for Delivery">Out for Delivery</option>
+  <option value="Delivered">Delivered</option>
+  <option value="Cancelled">Cancelled</option>
+</select>
 
-</option>
-                                 
-                                  <option value="Cancelled">Delivered</option>
-                                </select>
                               ) : (
                                 <span className={`px-2 py-1 text-xs rounded-full ${
                                   order.status === 'Completed' 

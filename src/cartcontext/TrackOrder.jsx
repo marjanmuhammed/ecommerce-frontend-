@@ -235,9 +235,9 @@ const TrackOrder = () => {
                             <p className="text-muted small mb-1">{item.description}</p>
                           )}
                           <p className="text-muted mb-1">
-                            ₹{item.price} x {item.quantity}
+                          Price  ₹{item.price}  x {item.quantity}
                           </p>
-                          <p className="fw-semibold mb-0">₹{item.totalPrice}</p>
+                          <p className="fw-semibold mb-0">Grant Total : ₹{item.totalPrice}</p>
                         </div>
                       </div>
                     </Col>

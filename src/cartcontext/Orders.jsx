@@ -117,19 +117,25 @@ const stages = ["Confirmed", "Processing", "Shipped", "Out for Delivery", "Deliv
                 <h4 className="text-lg font-semibold text-gray-800">
                   Order ID: {order.id}
                 </h4>
-                <span className={`px-3 py-1 text-xs rounded-full ${
-                  order.status === 'Completed' 
-                    ? 'bg-green-100 text-green-800' 
-                    : order.status === 'Processing' 
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : order.status === 'Pending'
-                    ? 'bg-blue-100 text-blue-800'
-                    : order.status === 'Cancelled'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {order.status}
-                </span>
+            <span className={`px-3 py-1 text-xs rounded-full relative ${
+  order.status === 'Completed' 
+    ? 'bg-green-100 text-green-800' 
+    : order.status === 'Processing' 
+    ? 'bg-yellow-100 text-yellow-800'
+    : order.status === 'Pending'
+    ? 'bg-blue-100 text-blue-800 animate-pulse' // Added animate-pulse class
+    : order.status === 'Cancelled'
+    ? 'bg-red-100 text-red-800'
+    : 'bg-gray-100 text-gray-800'
+}`}>
+  {order.status}
+  {order.status === 'Pending' && (
+    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+      <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+    </span>
+  )}
+</span>
               </div>
 
               {/* Order Time */}
@@ -218,12 +224,12 @@ const stages = ["Confirmed", "Processing", "Shipped", "Out for Delivery", "Deliv
                       )}
                       <p className="text-gray-600 mt-1">
                         <span className="text-green-600 font-bold">
-                          ₹{item.price}
+                         Price ₹{item.price}
                         </span>{" "}
                         x {item.quantity}
                       </p>
                       <p className="text-gray-800 font-semibold mt-1">
-                        ₹{item.totalPrice}
+                      Total Amount :  ₹{item.totalPrice}
                       </p>
                     </div>
                   ))}

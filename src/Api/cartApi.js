@@ -1,6 +1,4 @@
 
-
-
 import api from "../Api/axiosSetup";
 
 const API_URL = "/Cart";

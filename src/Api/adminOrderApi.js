@@ -1,32 +1,26 @@
+import api from "../Api/axiosSetup";
 
+// Get all orders
+export const getAllOrders = () => api.get("/admin/orders");
 
-// src/api/adminOrderApi.js
-import api from "../Api/axiosSetup"; // your Axios instance with interceptors
+// Get order by ID
+export const getOrderById = (orderId) => api.get(`/admin/orders/${orderId}`);
 
-// Get all orders (Admin only)
-export const getAllOrders = () => {
-  return api.get("/admin/orders");
-};
-
-// Get single order by ID (Admin only)
-export const getOrderById = (orderId) => {
-  return api.get(`/admin/orders/${orderId}`);
-};
-
-// Delete order by ID (Admin only)
-export const deleteOrder = (orderId) => {
-  return api.delete(`/admin/orders/${orderId}`);
-};
-
-// Update order status (Admin only) - Correct implementation
+// Update order status
 export const updateOrderStatus = (orderId, status) => {
-  // Send the status as a string directly in the request body
-  return api.put(`/admin/orders/${orderId}/status`, `"${status}"`, {
-    headers: {
-      'Content-Type': 'application/json'
+  return api.put(
+    `/admin/orders/${orderId}/status`,
+    status, // send as plain string
+    {
+      headers: { "Content-Type": "application/json" },
     }
-  });
+  );
 };
 
+// Get all orders for a specific user
+export const getOrdersByUserId = (userId) => api.get(`/admin/orders/user/${userId}`);
 
-/////////final////////////
+// Delete order
+export const deleteOrder = (orderId) => api.delete(`/admin/orders/${orderId}`);
+
+
